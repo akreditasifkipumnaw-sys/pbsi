@@ -2,7 +2,7 @@ const SPREADSHEET_ID = '1sRqwOHwodD_uReBOMy3k0MjtGWGrdl6UgkxxFV9FRn4';
 const ADMIN_PASSWORD = 'unggul'; 
 
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
+  return HtmlService.createTemplateFromFile('index')
     .evaluate()
     .setTitle('Sistem Informasi Akreditasi FKIP UMN')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
