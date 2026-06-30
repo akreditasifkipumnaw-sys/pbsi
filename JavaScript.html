@@ -1,0 +1,212 @@
+<script>
+  let isAdmin = false;
+  const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+  window.onload = function() {
+    google.script.run.withSuccessHandler(populateSheets).getSheetNames();
+  };
+
+  function populateSheets(names) {
+    const select = document.getElementById('sheetSelect');
+    names.forEach(name => {
+      let opt = document.createElement('option');
+      opt.value = name;
+      opt.innerHTML = name;
+      select.appendChild(opt);
+    });
+  }
+
+  function showPage(page) {
+    if (page === 'home') {
+      document.getElementById('homePage').classList.remove('hidden');
+      document.getElementById('berkasPage').classList.add('hidden');
+    } else {
+      document.getElementById('homePage').classList.add('hidden');
+      document.getElementById('berkasPage').classList.remove('hidden');
+    }
+  }
+
+  // --- FUNGSI LOGIN DENGAN BAHASA LEBIH BAIK ---
+  async function handleLogin() {
+    const { value: password } = await Swal.fire({
+      title: 'Autentikasi Admin',
+      text: 'Silakan masukkan kata sandi Anda untuk mengakses fitur pengelolaan data.',
+      input: 'password',
+      inputPlaceholder: 'Masukkan kata sandi...',
+      showCancelButton: true,
+      confirmButtonColor: '#004d40',
+      cancelButtonText: 'Batal',
+      confirmButtonText: 'Masuk',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      }
+    });
+
+    if (password) {
+      Swal.fire({
+        title: 'Memproses...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      google.script.run.withSuccessHandler(function(isValid) {
+        if (isValid) {
+          isAdmin = true;
+          document.getElementById('loginBtn').classList.add('hidden');
+          document.getElementById('logoutBtn').classList.remove('hidden');
+          document.getElementById('adminPanel').classList.remove('hidden');
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Akses Diterima',
+            text: 'Selamat datang, Anda kini memiliki akses penuh sebagai Administrator.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          loadData(); 
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Ditolak',
+            text: 'Kata sandi yang Anda masukkan salah. Silakan coba kembali.',
+            confirmButtonColor: '#d33'
+          });
+        }
+      }).checkLogin(password);
+    }
+  }
+
+  // --- FUNGSI LOGOUT DENGAN BAHASA LEBIH BAIK ---
+  function handleLogout() {
+    Swal.fire({
+      title: 'Konfirmasi Logout',
+      text: "Apakah Anda yakin ingin mengakhiri sesi Administrator?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6e7881',
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        isAdmin = false;
+        document.getElementById('loginBtn').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.add('hidden');
+        document.getElementById('adminPanel').classList.add('hidden');
+        
+        Swal.fire({
+          icon: 'info',
+          title: 'Sesi Berakhir',
+          text: 'Anda telah berhasil keluar dari sistem.',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        
+        loadData(); 
+        showPage('home');
+      }
+    });
+  }
+
+  function loadData() {
+    const sheetName = document.getElementById('sheetSelect').value;
+    if (!sheetName) return;
+    document.getElementById('dataTable').innerHTML = '<tr><td colspan="3" class="text-center text-muted small">Sedang mengambil data berkas...</td></tr>';
+    google.script.run.withSuccessHandler(renderTable).getData(sheetName);
+  }
+
+  function renderTable(data) {
+    let html = '';
+    if(data.length === 0) {
+      html = '<tr><td colspan="3" class="text-center">Data tidak ditemukan pada kriteria ini.</td></tr>';
+    } else {
+      data.forEach((item, index) => {
+        let btnLihat = (item.link && item.link.toString().trim() !== "" && item.link !== "undefined") 
+          ? `<a href="${item.link}" target="_blank" class="btn btn-sm btn-info px-3 shadow-sm">Lihat File</a>` 
+          : ""; 
+
+        let btnAdmin = isAdmin ? `
+          <button class="btn btn-sm btn-warning shadow-sm" onclick="openEditModal('${item.row}', '${item.keterangan}', '${item.link}')">Edit</button>
+          <button class="btn btn-sm btn-danger shadow-sm" onclick="deleteItem('${item.row}')">Hapus</button>
+        ` : '';
+
+        html += `<tr>
+          <td class="text-center text-muted small">${index + 1}</td>
+          <td class="small">${item.keterangan}</td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center gap-2">
+              ${btnLihat}
+              ${btnAdmin}
+            </div>
+          </td>
+        </tr>`;
+      });
+    }
+    document.getElementById('dataTable').innerHTML = html;
+  }
+
+  function filterTable() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.getElementById('dataTable').getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+      let text = rows[i].getElementsByTagName('td')[1]?.textContent.toLowerCase();
+      if(text) rows[i].style.display = text.includes(input) ? '' : 'none';
+    }
+  }
+
+  function addNewData() {
+    const sheetName = document.getElementById('sheetSelect').value;
+    const ket = document.getElementById('newKet').value;
+    const link = document.getElementById('newLink').value;
+    if (!ket) return Swal.fire('Perhatian', 'Keterangan barang bukti tidak boleh kosong.', 'warning');
+
+    google.script.run.withSuccessHandler(function(res) {
+      Swal.fire('Berhasil', 'Data baru telah disimpan ke sistem.', 'success');
+      loadData();
+      document.getElementById('newKet').value = '';
+      document.getElementById('newLink').value = '';
+    }).addData(sheetName, ket, link);
+  }
+
+  function openEditModal(row, ket, link) {
+    document.getElementById('editRow').value = row;
+    document.getElementById('editKet').value = ket;
+    document.getElementById('editLink').value = (link === "undefined" || link === "null") ? "" : link;
+    editModal.show();
+  }
+
+  function submitEdit() {
+    const sheetName = document.getElementById('sheetSelect').value;
+    const row = document.getElementById('editRow').value;
+    const ket = document.getElementById('editKet').value;
+    const link = document.getElementById('editLink').value;
+
+    google.script.run.withSuccessHandler(function(res) {
+      Swal.fire('Diperbarui', 'Data berkas telah berhasil diperbarui.', 'success');
+      editModal.hide();
+      loadData();
+    }).updateData(sheetName, row, ket, link);
+  }
+
+  function deleteItem(row) {
+    Swal.fire({
+      title: 'Konfirmasi Hapus',
+      text: "Data ini akan dihapus secara permanen dari server. Lanjutkan?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6e7881',
+      confirmButtonText: 'Ya, Hapus Data',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const sheetName = document.getElementById('sheetSelect').value;
+        google.script.run.withSuccessHandler(function(res) {
+          Swal.fire('Terhapus', 'Data telah berhasil dihapus.', 'success');
+          loadData();
+        }).deleteData(sheetName, row);
+      }
+    });
+  }
+</script>
