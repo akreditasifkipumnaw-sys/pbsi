@@ -1,144 +1,20 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIAKAD FKIP UMN Al-Washliyah</title>
     <style>
-      body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-      .navbar { background-color: #004d40 !important; }
-      .hero { 
-        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1350&q=80'); 
-        background-size: cover; 
-        color: white; 
-        padding: 150px 0; 
-        text-align: center; 
-        min-height: 90vh;
-        display: flex;
-        align-items: center;
-      }
-      .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border:none; }
-      .hidden { display: none !important; }
-      .nav-link { cursor: pointer; }
-      .btn-info { color: white !important; }
-      /* Customize SweetAlert Font */
-      .swal2-popup { font-family: 'Segoe UI', sans-serif !important; font-size: 0.9rem !important; }
+        body, html {
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+        }
+        iframe {
+            width: 100%; height: 100%; border: none;
+        }
     </style>
-  </head>
-  <body>
-
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-      <div class="container">
-        <a class="navbar-brand fw-bold" href="#" onclick="showPage('home')">SIAKAD FKIP UMN</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-center">
-            <li class="nav-item"><a class="nav-link" onclick="showPage('home')">Beranda</a></li>
-            <li class="nav-item">
-               <button id="loginBtn" class="btn btn-outline-light ms-lg-3 px-4" onclick="handleLogin()">Login Admin</button>
-               <button id="logoutBtn" class="btn btn-danger ms-lg-3 px-4 hidden" onclick="handleLogout()">Logout</button>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Halaman Beranda -->
-    <div id="homePage">
-      <div class="hero">
-        <div class="container">
-          <h1 class="display-4 fw-bold">Selamat Datang di Sistem Informasi Internal Akreditasi</h1>
-          <p class="lead mt-3">Program Studi Pendidikan Bahasa dan Sastra Indonesia <br> FKIP UMN Al-Washliyah</p>
-          <hr class="my-4" style="border-color: rgba(255,255,255,0.3); width: 50%; margin: auto;">
-          <p class="mb-4">Klik tombol di bawah ini untuk mengakses dokumen pendukung akreditasi</p>
-          <button class="btn btn-success btn-lg px-5 shadow" onclick="showPage('berkas')">Mulai Cari Berkas</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Halaman Berkas Pendukung -->
-    <div id="berkasPage" class="container mt-5 hidden">
-      <div class="card p-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-           <h3 class="fw-bold text-dark m-0">Berkas Pendukung Akreditasi</h3>
-           <button class="btn btn-sm btn-outline-secondary px-3" onclick="showPage('home')">Kembali ke Beranda</button>
-        </div>
-
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Pilih Kriteria/Sheet:</label>
-            <select id="sheetSelect" class="form-select" onchange="loadData()">
-              <option value="">-- Pilih Kriteria --</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Cari Berkas:</label>
-            <input type="text" id="searchInput" class="form-control" placeholder="Ketik kata kunci nama berkas..." onkeyup="filterTable()">
-          </div>
-        </div>
-
-        <!-- Admin Panel Tambah -->
-        <div id="adminPanel" class="mt-4 p-4 border rounded bg-light hidden">
-          <h6 class="fw-bold mb-3 text-success">Tambah Data Baru</h6>
-          <div class="row g-2">
-            <div class="col-md-5"><input type="text" id="newKet" class="form-control" placeholder="Keterangan Barbut"></div>
-            <div class="col-md-5"><input type="text" id="newLink" class="form-control" placeholder="Link Google Drive (Opsional)"></div>
-            <div class="col-md-2"><button class="btn btn-success w-100" onclick="addNewData()">Simpan</button></div>
-          </div>
-        </div>
-
-        <div class="table-responsive mt-4">
-          <table class="table table-hover align-middle shadow-sm">
-            <thead class="table-dark">
-              <tr>
-                <th width="5%" class="text-center">No</th>
-                <th width="65%">Keterangan Barang Bukti</th>
-                <th width="30%" class="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="dataTable">
-              <tr><td colspan="3" class="text-center text-muted">Silahkan pilih kriteria terlebih dahulu</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Edit -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">Perbarui Data</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="editRow">
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Keterangan Barbut</label>
-              <input type="text" id="editKet" class="form-control">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Link File</label>
-              <input type="text" id="editLink" class="form-control">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary" onclick="submitEdit()">Simpan Perubahan</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <?!= include('JavaScript'); ?>
-  </body>
+</head>
+<body>
+    <!-- GANTI URL DI BAWAH INI DENGAN URL WEB APP GAS ANDA -->
+    <iframe src="https://script.google.com/macros/s/AKfycbyfSOrWf07F1yhlvE1UW9cqLMcF13B3U2pGu28vm3JE9R8xujvkUux9BOaDzsCu94_Z/exec"></iframe>
+</body>
 </html>
